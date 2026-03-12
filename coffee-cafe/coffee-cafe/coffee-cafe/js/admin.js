@@ -1,7 +1,7 @@
 // ============================================================
 // ADMIN.JS — Staff Dashboard with Real-time Orders
 // ============================================================
-const ADMIN_EMAILS = ['your-staff@email.com', 'another-staff@email.com'];
+
 const ADMIN_EMAILS = ['admin@brewhaus.com']; // Add your admin emails here
 let unsubscribeOrders = null;
 let audioEnabled = false;

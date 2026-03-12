@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Brewhaus Café</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="nav-logo"><span>☕</span> Brewhaus</a>
+    <div class="nav-actions">
+      <a href="cart.html" class="nav-cart-btn">🛒 Cart <span class="cart-badge">0</span></a>
+    </div>
+  </div>
+</nav>
+
+<div class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-icon">☕</span>
+        <h2>Welcome to Brewhaus</h2>
+        <p>Sign in to place orders and track your coffee</p>
+      </div>
+
+      <!-- Method Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('email', this)">✉ Email</button>
+        <button class="auth-tab" onclick="switchTab('phone', this)">📱 Phone</button>
+        <button class="auth-tab" onclick="switchTab('signup', this)">✨ Sign Up</button>
+      </div>
+
+      <!-- Google SSO (shown on all tabs) -->
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <span class="google-icon">🔑</span>
+        Continue with Google
+      </button>
+      <div class="auth-divider">or</div>
+
+      <!-- EMAIL LOGIN PANEL -->
+      <div class="auth-panel active" id="panel-email">
+        <div class="input-group">
+          <span class="input-icon">✉</span>
+          <input type="email" id="login-email" class="login-input" placeholder="your@email.com" autocomplete="email" />
+        </div>
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="login-password" class="login-input" placeholder="Password" autocomplete="current-password" />
+          <button class="password-toggle" onclick="togglePassword('login-password', this)">👁</button>
+        </div>
+        <button class="btn-auth" onclick="handleEmailLogin()">Sign In →</button>
+        <p style="text-align:center;margin-top:16px;font-size:0.8rem;color:var(--text-muted)">
+          Don't have an account? <button onclick="switchTabByName('signup')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem">Sign up here</button>
+        </p>
+      </div>
+
+      <!-- PHONE LOGIN PANEL -->
+      <div class="auth-panel" id="panel-phone">
+        <!-- Step 1: Phone number -->
+        <div class="otp-step active" id="otp-step-1">
+          <div class="input-group">
+            <span class="input-icon">📱</span>
+            <input type="tel" id="phone-number" class="login-input" placeholder="+1 555 000 0000" autocomplete="tel" />
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Include your country code (e.g. +1 for US, +63 for PH)</p>
+          <button class="btn-auth" onclick="handleSendOTP()">Send Verification Code</button>
+        </div>
+        <!-- Step 2: OTP code -->
+        <div class="otp-step" id="otp-step-2">
+          <p style="text-align:center;color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px">
+            Code sent to <strong id="phone-display"></strong>
+          </p>
+          <div class="input-group">
+            <span class="input-icon">🔢</span>
+            <input type="text" id="otp-code" class="login-input otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" />
+          </div>
+          <button class="btn-auth" onclick="handleVerifyOTP()">Verify Code →</button>
+          <p style="text-align:center;margin-top:12px">
+            <button onclick="backToPhone()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem">← Try different number</button>
+          </p>
+        </div>
+        <div id="recaptcha-container"></div>
+      </div>
+
+      <!-- SIGNUP PANEL -->
+      <div class="auth-panel" id="panel-signup">
+        <div class="input-group">
+          <span class="input-icon">👤</span>
+          <input type="text" id="signup-name" class="login-input" placeholder="Full Name" autocomplete="name" />
+        </div>
+        <div class="input-group">
+          <span class="input-icon">✉</span>
+          <input type="email" id="signup-email" class="login-input" placeholder="your@email.com" autocomplete="email" />
+        </div>
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="signup-password" class="login-input" placeholder="Password (min. 6 chars)" autocomplete="new-password" />
+          <button class="password-toggle" onclick="togglePassword('signup-password', this)">👁</button>
+        </div>
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="signup-confirm" class="login-input" placeholder="Confirm Password" autocomplete="new-password" />
+        </div>
+        <button class="btn-auth" onclick="handleSignUp()">Create Account →</button>
+        <p style="text-align:center;margin-top:16px;font-size:0.8rem;color:var(--text-muted)">
+          Already have an account? <button onclick="switchTabByName('email')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem">Sign in</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  // Redirect if already logged in
+  auth.onAuthStateChanged(user => {
+    if (user) window.location.href = 'index.html';
+  });
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function switchTabByName(name) {
+    const tabs = document.querySelectorAll('.auth-tab');
+    const names = ['email', 'phone', 'signup'];
+    const idx = names.indexOf(name);
+    if (idx >= 0) switchTab(name, tabs[idx]);
+  }
+
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    input.type = input.type === 'password' ? 'text' : 'password';
+    btn.textContent = input.type === 'password' ? '👁' : '🙈';
+  }
+
+  function handleEmailLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showToast('Please fill in all fields', 'error'); return; }
+    signInWithEmail(email, password);
+  }
+
+  function handleSignUp() {
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirm = document.getElementById('signup-confirm').value;
+    if (!name || !email || !password) { showToast('Please fill in all fields', 'error'); return; }
+    if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
+    if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+    signUpWithEmail(email, password, name);
+  }
+
+  async function handleSendOTP() {
+    const phone = document.getElementById('phone-number').value.trim();
+    if (!phone) { showToast('Enter your phone number', 'error'); return; }
+    const sent = await sendOTP(phone);
+    if (sent) {
+      document.getElementById('phone-display').textContent = phone;
+      document.getElementById('otp-step-1').classList.remove('active');
+      document.getElementById('otp-step-2').classList.add('active');
+    }
+  }
+
+  function handleVerifyOTP() {
+    const code = document.getElementById('otp-code').value.trim();
+    if (!code || code.length < 6) { showToast('Enter the 6-digit code', 'error'); return; }
+    verifyOTP(code);
+  }
+
+  function backToPhone() {
+    document.getElementById('otp-step-2').classList.remove('active');
+    document.getElementById('otp-step-1').classList.add('active');
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const active = document.querySelector('.auth-panel.active');
+      if (active?.id === 'panel-email') handleEmailLogin();
+      else if (active?.id === 'panel-signup') handleSignUp();
+      else if (document.getElementById('otp-step-1')?.classList.contains('active')) handleSendOTP();
+      else if (document.getElementById('otp-step-2')?.classList.contains('active')) handleVerifyOTP();
+    }
+  });
+</script>
+</body>
+</html>

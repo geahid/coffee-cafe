@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Dashboard — Brewhaus Café</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+<body>
+
+<!-- TOP BAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="nav-logo"><span>☕</span> Brewhaus <span style="font-size:0.75rem;color:var(--text-muted);margin-left:4px;font-family:'DM Sans',sans-serif;font-weight:400">Staff</span></a>
+    <div class="nav-actions" style="margin-left:auto">
+      <a href="index.html" class="btn btn-secondary btn-sm">← Customer View</a>
+      <div class="nav-profile-link" style="display:flex">
+        <img src="" alt="" class="user-avatar" />
+        <span id="admin-user-name" class="user-display-name">Loading...</span>
+        <div class="profile-dropdown">
+          <button class="dropdown-item danger" onclick="signOut()">↩ Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- AUTH LOADER -->
+<div id="admin-auth-loader" class="admin-auth-loader">
+  <div class="spinner"></div>
+</div>
+
+<!-- LOGIN PROMPT -->
+<div id="admin-login-prompt" class="admin-login-prompt">
+  <div style="font-size:3rem;margin-bottom:16px">🔐</div>
+  <h2 style="font-family:'Playfair Display',serif;margin-bottom:8px">Staff Access Required</h2>
+  <p style="color:var(--text-muted);margin-bottom:24px">Sign in with your staff account to access the dashboard.</p>
+  <a href="login.html" class="btn btn-primary">Sign In</a>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="admin-dashboard" style="display:none">
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div>
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="stat-pending">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">☕</div>
+      <div>
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value" id="stat-preparing">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✓</div>
+      <div>
+        <div class="stat-label">Today Completed</div>
+        <div class="stat-value" id="stat-completed">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div>
+        <div class="stat-label">Today Revenue</div>
+        <div class="stat-value" id="stat-revenue">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- Controls -->
+    <div class="admin-topbar" style="position:static;border:none;padding:0;margin-bottom:24px">
+      <div class="admin-topbar-title">Live Orders Dashboard</div>
+      <div class="admin-controls">
+        <div class="live-badge">
+          <div class="live-dot"></div> Live
+        </div>
+        <select class="admin-select" id="status-filter">
+          <option value="all">All Orders</option>
+          <option value="pending">Pending</option>
+          <option value="accepted">Accepted</option>
+          <option value="preparing">Preparing</option>
+          <option value="ready">Ready</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" id="audio-toggle">🔕 Sound Off</button>
+        <button class="btn btn-secondary btn-sm" id="request-notif-btn">🔔 Enable Notifications</button>
+      </div>
+    </div>
+
+    <!-- Orders Grid -->
+    <div class="orders-grid" id="orders-grid"></div>
+    <div class="empty-orders" id="empty-orders">
+      <span>☕</span>
+      <h3>No orders yet</h3>
+      <p style="color:var(--text-muted)">New orders will appear here in real time</p>
+    </div>
+
+    <!-- QR Code Generator -->
+    <div class="qr-panel">
+      <h3>📱 QR Table Ordering</h3>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:16px">Generate a QR code for any table. Customers scan to open the menu pre-loaded for their table.</p>
+      <div class="qr-controls">
+        <input type="text" id="qr-table-input" class="form-input" placeholder="Table number (e.g. 5)" style="max-width:200px" />
+        <button class="btn btn-primary btn-sm" id="generate-qr-btn">Generate QR Code</button>
+      </div>
+      <div class="qr-display" id="qr-display"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

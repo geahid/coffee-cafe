@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders — Brewhaus Café</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="nav-logo"><span>☕</span> Brewhaus</a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="menu.html" class="nav-link">Menu</a>
+      <a href="orders.html" class="nav-link active">My Orders</a>
+    </div>
+    <div class="nav-actions">
+      <a href="cart.html" class="nav-cart-btn">🛒 Cart<span class="cart-badge">0</span></a>
+      <a href="login.html" class="nav-login-link"><span>👤</span> Sign In</a>
+      <div class="nav-profile-link">
+        <img src="" alt="" class="user-avatar" />
+        <span class="user-display-name"></span>
+        <div class="profile-dropdown">
+          <button class="dropdown-item danger" onclick="signOut()">↩ Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container">
+  <h1 class="section-title">My Orders</h1>
+  <p class="section-subtitle">Track your orders in real time</p>
+
+  <!-- Not logged in -->
+  <div id="orders-login-prompt" style="display:none;text-align:center;padding:60px 20px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
+    <div style="font-size:3rem;margin-bottom:16px">🔐</div>
+    <h3 style="margin-bottom:8px">Sign in to see your orders</h3>
+    <p style="color:var(--text-muted);margin-bottom:24px">Your order history and live tracking will appear here.</p>
+    <a href="login.html" class="btn btn-primary">Sign In</a>
+  </div>
+
+  <!-- Loading -->
+  <div id="orders-loader" style="text-align:center;padding:60px;display:none">
+    <div class="spinner" style="margin:0 auto"></div>
+    <p style="color:var(--text-muted);margin-top:16px">Loading your orders...</p>
+  </div>
+
+  <!-- Orders list -->
+  <div class="customer-orders-list" id="orders-list" style="display:none"></div>
+
+  <!-- Empty state -->
+  <div id="orders-empty" style="display:none;text-align:center;padding:60px 20px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
+    <div style="font-size:3rem;margin-bottom:16px">📋</div>
+    <h3 style="margin-bottom:8px">No orders yet</h3>
+    <p style="color:var(--text-muted);margin-bottom:24px">Your orders will appear here after you place them.</p>
+    <a href="menu.html" class="btn btn-primary">Order Now ☕</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-logo">☕ Brewhaus</div>
+  <p>Open daily 7am–9pm</p>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script>
+  const STATUS_CONFIG = {
+    pending:   { label: 'Pending', color: '#F59E0B', icon: '⏳', step: 0 },
+    accepted:  { label: 'Accepted', color: '#3B82F6', icon: '✅', step: 1 },
+    preparing: { label: 'Preparing', color: '#8B5CF6', icon: '☕', step: 2 },
+    ready:     { label: 'Ready!', color: '#10B981', icon: '🔔', step: 3 },
+    completed: { label: 'Completed', color: '#6B7280', icon: '✓', step: 4 },
+    cancelled: { label: 'Cancelled', color: '#EF4444', icon: '✕', step: -1 }
+  };
+
+  let unsubOrders = null;
+
+  auth.onAuthStateChanged(user => {
+    const loginPrompt = document.getElementById('orders-login-prompt');
+    const loader = document.getElementById('orders-loader');
+    const list = document.getElementById('orders-list');
+
+    if (!user) {
+      loginPrompt.style.display = 'block';
+      loader.style.display = 'none';
+      list.style.display = 'none';
+      return;
+    }
+
+    loginPrompt.style.display = 'none';
+    loader.style.display = 'block';
+
+    if (unsubOrders) unsubOrders();
+    unsubOrders = db.collection('orders')
+      .where('userId', '==', user.uid)
+      .orderBy('timestamp', 'desc')
+      .limit(20)
+      .onSnapshot(snap => {
+        loader.style.display = 'none';
+        const orders = [];
+        snap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+        renderCustomerOrders(orders);
+      }, err => {
+        loader.style.display = 'none';
+        console.error(err);
+        showToast('Failed to load orders', 'error');
+      });
+  });
+
+  function renderCustomerOrders(orders) {
+    const list = document.getElementById('orders-list');
+    const empty = document.getElementById('orders-empty');
+
+    if (orders.length === 0) {
+      list.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    list.style.display = 'flex';
+
+    list.innerHTML = orders.map(order => {
+      const s = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+      const time = order.timestamp?.toDate ? order.timestamp.toDate() : new Date();
+      const timeStr = time.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const steps = ['pending', 'accepted', 'preparing', 'ready'];
+      const trackHTML = steps.map(st => {
+        const sc = STATUS_CONFIG[st];
+        const currentStep = (STATUS_CONFIG[order.status] || STATUS_CONFIG.pending).step;
+        const thisStep = sc.step;
+        const isActive = currentStep >= thisStep;
+        return `
+          <div class="status-step ${isActive ? 'active' : ''}">
+            <div class="step-icon">${sc.icon}</div>
+            <div class="step-label">${sc.label}</div>
+          </div>`;
+      }).join('');
+
+      return `
+      <div class="customer-order-card">
+        <div class="customer-order-header">
+          <div>
+            <div style="font-weight:700;font-size:0.95rem">#${order.orderNumber || order.id.slice(-6).toUpperCase()}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${timeStr} · ${order.tableOrPickup}</div>
+          </div>
+          <span style="background:${s.color}20;color:${s.color};border:1px solid ${s.color}40;padding:4px 12px;border-radius:100px;font-size:0.8rem;font-weight:600">
+            ${s.icon} ${s.label}
+          </span>
+        </div>
+        <div class="customer-order-body">
+          ${order.status !== 'completed' && order.status !== 'cancelled' ? `
+            <div class="order-status-track">${trackHTML}</div>
+          ` : ''}
+          <div class="customer-order-items">
+            ${order.items.map(i => `
+              <div class="customer-order-item">
+                <span>${i.emoji} ${i.name} ×${i.quantity}</span>
+                <span style="color:var(--gold)">$${(i.price * i.quantity).toFixed(2)}</span>
+              </div>`).join('')}
+          </div>
+          ${order.note ? `<div class="order-note">📝 ${order.note}</div>` : ''}
+          <div class="customer-order-total">Total: $${order.totalPrice.toFixed(2)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>
